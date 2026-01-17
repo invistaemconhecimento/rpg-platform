@@ -910,48 +910,335 @@ const DiceSystem = {
         return stats;
     },
     
-    // Mostrar estatísticas
-showStatistics: function() {
-    const stats = this.getRollStatistics();
+// =================== DICE SECTION ===================
+const DiceSystem = {
+    // ... código anterior permanece igual até a função showStatistics ...
     
-    let statsHTML = `
-        <div style="padding: 15px;">
-            <h3 style="color: #ffd93d; margin-bottom: 15px;">
-                <i class="fas fa-chart-bar"></i> Estatísticas de Rolagem
-            </h3>
+    // Mostrar estatísticas (FUNÇÃO COMPLETA)
+    showStatistics: function() {
+        const stats = this.getRollStatistics();
+        
+        // Verificar se já existe um modal de estatísticas
+        let statsModal = document.getElementById('diceStatsModal');
+        
+        if (!statsModal) {
+            // Criar modal
+            statsModal = document.createElement('div');
+            statsModal.id = 'diceStatsModal';
+            statsModal.className = 'sheet-modal';
+            statsModal.style.display = 'flex';
+            statsModal.style.zIndex = '3000';
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
-                <div style="background: rgba(25, 25, 45, 0.8); padding: 10px; border-radius: 8px; border: 1px solid rgba(83, 52, 131, 0.3);">
-                    <div style="color: #8a8ac4; font-size: 0.9rem;">Total de Rolagens</div>
-                    <div style="color: #ffd93d; font-size: 1.5rem; font-weight: bold;">${stats.totalRolls}</div>
+            statsModal.innerHTML = `
+                <div class="sheet-modal-content" style="max-width: 600px;">
+                    <div class="sheet-modal-header">
+                        <div class="sheet-modal-title">
+                            <h2><i class="fas fa-chart-bar"></i> Estatísticas de Rolagem</h2>
+                            <p>Análise completa de todas as rolagens</p>
+                        </div>
+                        <button class="close-sheet-modal" onclick="document.getElementById('diceStatsModal').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="sheet-modal-body">
+                        ${this.generateStatisticsHTML(stats)}
+                    </div>
+                    <div class="sheet-modal-footer">
+                        <button class="btn-close-modal" onclick="document.getElementById('diceStatsModal').remove()">
+                            <i class="fas fa-times"></i> Fechar
+                        </button>
+                        <button class="btn-primary" onclick="DiceSystem.exportHistory()">
+                            <i class="fas fa-download"></i> Exportar Histórico
+                        </button>
+                    </div>
                 </div>
-                
-                <div style="background: rgba(25, 25, 45, 0.8); padding: 10px; border-radius: 8px; border: 1px solid rgba(83, 52, 131, 0.3);">
-                    <div style="color: #8a8ac4; font-size: 0.9rem;">Críticos</div>
-                    <div style="color: #4ade80; font-size: 1.5rem; font-weight: bold;">${stats.criticals}</div>
-                </div>
-                
-                <div style="background: rgba(25, 25, 45, 0.8); padding: 10px; border-radius: 8px; border: 1px solid rgba(83, 52, 131, 0.3);">
-                    <div style="color: #8a8ac4; font-size: 0.9rem;">Falhas Críticas</div>
-                    <div style="color: #ff6b6b; font-size: 1.5rem; font-weight: bold;">${stats.fails}</div>
-                </div>
-                
-                <div style="background: rgba(25, 25, 45, 0.8); padding: 10px; border-radius: 8px; border: 1px solid rgba(83, 52, 131, 0.3);">
-                    <div style="color: #8a8ac4; font-size: 0.9rem;">Tipos de Dados</div>
-                    <div style="color: #9d4edd; font-size: 1.5rem; font-weight: bold;">${Object.keys(stats.byDiceType).length}</div>
+            `;
+            
+            document.body.appendChild(statsModal);
+            
+            // Fechar ao clicar fora
+            statsModal.addEventListener('click', (e) => {
+                if (e.target === statsModal) {
+                    statsModal.remove();
+                }
+            });
+        }
+    },
+    
+    // Gerar HTML das estatísticas
+    generateStatisticsHTML: function(stats) {
+        let html = `
+            <div class="modal-section">
+                <h3><i class="fas fa-chart-pie"></i> Visão Geral</h3>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div class="stat-card-small">
+                        <div class="stat-icon-small" style="background: linear-gradient(135deg, #9d4edd 0%, #6a3093 100%);">
+                            <i class="fas fa-dice"></i>
+                        </div>
+                        <div>
+                            <div class="stat-label-small">Total de Rolagens</div>
+                            <div class="stat-number-small">${stats.totalRolls}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card-small">
+                        <div class="stat-icon-small" style="background: linear-gradient(135deg, #6bcf7f 0%, #4CAF50 100%);">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div>
+                            <div class="stat-label-small">Críticos</div>
+                            <div class="stat-number-small">${stats.criticals}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card-small">
+                        <div class="stat-icon-small" style="background: linear-gradient(135deg, #ff6b6b 0%, #e74c3c 100%);">
+                            <i class="fas fa-skull"></i>
+                        </div>
+                        <div>
+                            <div class="stat-label-small">Falhas Críticas</div>
+                            <div class="stat-number-small">${stats.fails}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card-small">
+                        <div class="stat-icon-small" style="background: linear-gradient(135deg, #4d96ff 0%, #3498db 100%);">
+                            <i class="fas fa-dice-d20"></i>
+                        </div>
+                        <div>
+                            <div class="stat-label-small">Tipos de Dados</div>
+                            <div class="stat-number-small">${Object.keys(stats.byDiceType).length}</div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
-            ${this.generateDetailedStatsHTML(stats)}
+            <div class="modal-section">
+                <h3><i class="fas fa-chart-line"></i> Distribuição por Tipo de Dado</h3>
+                <div class="dice-type-stats">
+        `;
+        
+        // Estatísticas por tipo de dado
+        Object.entries(stats.byDiceType).sort((a, b) => a[0] - b[0]).forEach(([diceType, data]) => {
+            const percentage = stats.totalRolls > 0 ? ((data.count / stats.totalRolls) * 100).toFixed(1) : 0;
+            const criticalRate = data.count > 0 ? ((data.criticals / data.count) * 100).toFixed(1) : 0;
+            const failRate = data.count > 0 ? ((data.fails / data.count) * 100).toFixed(1) : 0;
             
-            <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: flex-end;">
-                <button id="closeStats" class="btn-secondary" style="padding: 8px 15px;">Fechar</button>
-                <button id="exportStats" class="btn-primary" style="padding: 8px 15px;">
-                    <i class="fas fa-download"></i> Exportar
-                </button>
+            html += `
+                <div class="dice-stat-item">
+                    <div class="dice-stat-header">
+                        <span class="dice-type-label">
+                            <i class="fas fa-dice-d${diceType === '100' ? '100' : diceType}"></i>
+                            d${diceType === '100' ? '%' : diceType}
+                        </span>
+                        <span class="dice-count">${data.count} rolagens</span>
+                    </div>
+                    <div class="dice-stat-bar">
+                        <div class="dice-stat-bar-fill" style="width: ${percentage}%"></div>
+                    </div>
+                    <div class="dice-stat-details">
+                        <span class="dice-stat-detail">
+                            <i class="fas fa-chart-line"></i>
+                            Média: ${stats.averageRolls[diceType]}
+                        </span>
+                        <span class="dice-stat-detail ${data.criticals > 0 ? 'critical' : ''}">
+                            <i class="fas fa-star"></i>
+                            Críticos: ${data.criticals} (${criticalRate}%)
+                        </span>
+                        <span class="dice-stat-detail ${data.fails > 0 ? 'fail' : ''}">
+                            <i class="fas fa-skull"></i>
+                            Falhas: ${data.fails} (${failRate}%)
+                        </span>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `
+                </div>
             </div>
-        </div>
-    `;
+            
+            <div class="modal-section">
+                <h3><i class="fas fa-trophy"></i> Recordes</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="record-card" style="border-left: 4px solid #6bcf7f;">
+                        <div class="record-icon">
+                            <i class="fas fa-crown"></i>
+                        </div>
+                        <div>
+                            <div class="record-label">Maior Rolagem</div>
+                            <div class="record-value">${stats.highestRoll.value}</div>
+                            <div class="record-detail">d${stats.highestRoll.diceType === 100 ? '%' : stats.highestRoll.diceType}</div>
+                            <div class="record-time">${stats.highestRoll.timestamp ? Utils.getTimeAgo(stats.highestRoll.timestamp) : 'N/A'}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="record-card" style="border-left: 4px solid #ff6b6b;">
+                        <div class="record-icon">
+                            <i class="fas fa-arrow-down"></i>
+                        </div>
+                        <div>
+                            <div class="record-label">Menor Rolagem</div>
+                            <div class="record-value">${stats.lowestRoll.value}</div>
+                            <div class="record-detail">d${stats.lowestRoll.diceType === 100 ? '%' : stats.lowestRoll.diceType}</div>
+                            <div class="record-time">${stats.lowestRoll.timestamp ? Utils.getTimeAgo(stats.lowestRoll.timestamp) : 'N/A'}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <style>
+                .stat-card-small {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    padding: 15px;
+                    background: rgba(30, 30, 50, 0.8);
+                    border-radius: 10px;
+                    border: 1px solid rgba(83, 52, 131, 0.3);
+                }
+                
+                .stat-icon-small {
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 10px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    font-size: 1.2rem;
+                }
+                
+                .stat-label-small {
+                    color: #8a8ac4;
+                    font-size: 0.8rem;
+                    margin-bottom: 2px;
+                }
+                
+                .stat-number-small {
+                    color: #ffd93d;
+                    font-size: 1.5rem;
+                    font-weight: bold;
+                }
+                
+                .dice-stat-item {
+                    background: rgba(30, 30, 50, 0.8);
+                    border-radius: 10px;
+                    padding: 15px;
+                    margin-bottom: 10px;
+                    border: 1px solid rgba(83, 52, 131, 0.3);
+                }
+                
+                .dice-stat-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 10px;
+                }
+                
+                .dice-type-label {
+                    color: #ffd93d;
+                    font-weight: bold;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                
+                .dice-count {
+                    color: #8a8ac4;
+                    font-size: 0.9rem;
+                }
+                
+                .dice-stat-bar {
+                    height: 8px;
+                    background: rgba(83, 52, 131, 0.3);
+                    border-radius: 4px;
+                    margin-bottom: 10px;
+                    overflow: hidden;
+                }
+                
+                .dice-stat-bar-fill {
+                    height: 100%;
+                    background: linear-gradient(90deg, #9d4edd 0%, #6a3093 100%);
+                    border-radius: 4px;
+                    transition: width 1s ease;
+                }
+                
+                .dice-stat-details {
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 10px;
+                    flex-wrap: wrap;
+                }
+                
+                .dice-stat-detail {
+                    color: #b8c1ec;
+                    font-size: 0.85rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                }
+                
+                .dice-stat-detail.critical {
+                    color: #6bcf7f;
+                }
+                
+                .dice-stat-detail.fail {
+                    color: #ff6b6b;
+                }
+                
+                .record-card {
+                    display: flex;
+                    align-items: center;
+                    gap: 15px;
+                    padding: 15px;
+                    background: rgba(30, 30, 50, 0.8);
+                    border-radius: 10px;
+                }
+                
+                .record-icon {
+                    width: 50px;
+                    height: 50px;
+                    border-radius: 10px;
+                    background: rgba(255, 255, 255, 0.1);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 1.5rem;
+                }
+                
+                .record-label {
+                    color: #8a8ac4;
+                    font-size: 0.9rem;
+                    margin-bottom: 5px;
+                }
+                
+                .record-value {
+                    color: #ffd93d;
+                    font-size: 1.8rem;
+                    font-weight: bold;
+                    line-height: 1;
+                    margin-bottom: 5px;
+                }
+                
+                .record-detail {
+                    color: #b8c1ec;
+                    font-size: 0.85rem;
+                    margin-bottom: 3px;
+                }
+                
+                .record-time {
+                    color: #8a8ac4;
+                    font-size: 0.8rem;
+                }
+            </style>
+        `;
+        
+        return html;
+    },
     
-    // ... código para exibir o modal e configurar eventos
-}
+    // ... resto do código permanece igual ...
+};
+
+// Exportar para uso global
+window.DiceSystem = DiceSystem;
