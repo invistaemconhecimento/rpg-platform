@@ -20,6 +20,11 @@ const DiceSystem = {
     init: function() {
         console.log('DiceSystem inicializado');
         
+        // Configurar som padrão (ativado)
+        if (localStorage.getItem('rpg_sound_enabled') === null) {
+            localStorage.setItem('rpg_sound_enabled', 'true');
+        }
+        
         // Inicializar elementos DOM
         this.elements = {
             diceDisplay: document.getElementById('diceDisplay'),
@@ -115,6 +120,45 @@ const DiceSystem = {
                 this.updateDiceDisplayPreview();
             });
         }
+        
+        // Botão de estatísticas (se não existir, criar)
+        if (!document.getElementById('diceStatsButton')) {
+            const statsButton = document.createElement('button');
+            statsButton.id = 'diceStatsButton';
+            statsButton.className = 'btn-secondary btn-small';
+            statsButton.innerHTML = '<i class="fas fa-chart-bar"></i> Estatísticas';
+            statsButton.style.marginTop = '10px';
+            statsButton.style.width = '100%';
+            
+            statsButton.addEventListener('click', () => {
+                this.showStatistics();
+            });
+            
+            // Adicionar ao container de controles de dados
+            const diceControls = document.querySelector('.dice-controls');
+            if (diceControls) {
+                diceControls.appendChild(statsButton);
+            }
+        }
+        
+        // Botão de reset (opcional)
+        if (!document.getElementById('resetDiceButton')) {
+            const resetButton = document.createElement('button');
+            resetButton.id = 'resetDiceButton';
+            resetButton.className = 'btn-secondary btn-small';
+            resetButton.innerHTML = '<i class="fas fa-redo"></i> Resetar';
+            resetButton.style.marginTop = '5px';
+            resetButton.style.width = '100%';
+            
+            resetButton.addEventListener('click', () => {
+                this.resetToDefaults();
+            });
+            
+            const diceOptions = document.querySelector('.dice-options');
+            if (diceOptions) {
+                diceOptions.appendChild(resetButton);
+            }
+        }
     },
     
     // Configurar animação de brilho no dado
@@ -150,13 +194,7 @@ const DiceSystem = {
         const textInput = document.getElementById('textInput')?.value.trim() || '';
         
         // Validar entrada
-        if (diceCount < 1 || diceCount > 100) {
-            alert('Quantidade de dados deve ser entre 1 e 100.');
-            return;
-        }
-        
-        if (Math.abs(mod) > 100) {
-            alert('Modificador deve estar entre -100 e +100.');
+        if (!this.validateInputs(diceCount, mod)) {
             return;
         }
         
@@ -455,38 +493,57 @@ const DiceSystem = {
     
     // Reproduzir som de rolagem
     playRollSound: function() {
-        // Tentar usar a Web Audio API se disponível
+        // Verificar se som está habilitado nas configurações
+        const soundEnabled = localStorage.getItem('rpg_sound_enabled') !== 'false';
+        if (!soundEnabled) return;
+        
         try {
-            if (typeof Audio !== 'undefined') {
-                // Criar contexto de áudio
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (AudioContext) {
-                    const audioContext = new AudioContext();
-                    const oscillator = audioContext.createOscillator();
-                    const gainNode = audioContext.createGain();
-                    
-                    // Configurar som
-                    oscillator.connect(gainNode);
-                    gainNode.connect(audioContext.destination);
-                    
-                    // Frequência baseada no tipo de dado
-                    let frequency = 440; // Lá (440 Hz)
-                    if (this.selectedDice === 20) frequency = 523.25; // Dó (C5)
-                    if (this.selectedDice === 100) frequency = 329.63; // Mi (E4)
-                    
-                    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
-                    
-                    // Envelope de volume
-                    gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-                    gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.1);
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.5);
-                    
-                    oscillator.start(audioContext.currentTime);
-                    oscillator.stop(audioContext.currentTime + 0.5);
-                }
+            // Usar sons diferentes baseados no tipo de dado
+            const sounds = {
+                4: { frequency: 261.63, duration: 0.3 }, // C4
+                6: { frequency: 293.66, duration: 0.4 }, // D4
+                8: { frequency: 329.63, duration: 0.5 }, // E4
+                10: { frequency: 349.23, duration: 0.4 }, // F4
+                12: { frequency: 392.00, duration: 0.5 }, // G4
+                20: { frequency: 440.00, duration: 0.6 }, // A4
+                100: { frequency: 523.25, duration: 0.7 } // C5
+            };
+            
+            const soundConfig = sounds[this.selectedDice] || sounds[20];
+            
+            if (typeof AudioContext !== 'undefined') {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                // Configurar tipo de onda (mais "dado-like")
+                oscillator.type = 'sawtooth';
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // Frequência aleatória dentro de um range para parecer mais natural
+                const freqVariation = soundConfig.frequency * (0.9 + Math.random() * 0.2);
+                oscillator.frequency.setValueAtTime(freqVariation, audioContext.currentTime);
+                
+                // Envelope de volume mais realista
+                gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.15, audioContext.currentTime + 0.05);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + soundConfig.duration);
+                
+                // Adicionar um pouco de detune para textura
+                oscillator.detune.setValueAtTime(Math.random() * 10, audioContext.currentTime);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + soundConfig.duration);
+                
+                // Fechar contexto após tocar
+                setTimeout(() => {
+                    audioContext.close();
+                }, soundConfig.duration * 1000 + 100);
             }
         } catch (error) {
-            console.log('Áudio não disponível:', error);
+            console.log('Áudio não disponível ou desabilitado:', error);
         }
     },
     
@@ -655,6 +712,32 @@ const DiceSystem = {
         }
     },
     
+    // =================== FUNÇÕES DE VALIDAÇÃO ===================
+    
+    // Validar entrada de dados
+    validateInputs: function(diceCount, modifier) {
+        const errors = [];
+        
+        if (isNaN(diceCount) || diceCount < 1 || diceCount > 100) {
+            errors.push('Quantidade de dados deve ser entre 1 e 100.');
+        }
+        
+        if (isNaN(modifier) || Math.abs(modifier) > 100) {
+            errors.push('Modificador deve estar entre -100 e +100.');
+        }
+        
+        if (this.selectedDice < 4 || this.selectedDice > 100) {
+            errors.push('Tipo de dado inválido.');
+        }
+        
+        if (errors.length > 0) {
+            Notifications.addNotification('Erro de validação', errors.join(' '), 'danger', true);
+            return false;
+        }
+        
+        return true;
+    },
+    
     // =================== FUNÇÕES DE CONTROLE ===================
     
     // Selecionar tipo de dado
@@ -682,6 +765,24 @@ const DiceSystem = {
             const diceName = diceType === 100 ? 'd%' : `d${diceType}`;
             InitiativeSystem.addCombatLog(`Dados ${diceName} selecionados para rolagem`, 'system');
         }
+    },
+    
+    // Resetar configurações para padrão
+    resetToDefaults: function() {
+        this.selectDiceType(20);
+        
+        if (this.elements.diceQuantity) this.elements.diceQuantity.value = '2';
+        if (this.elements.modifier) this.elements.modifier.value = '0';
+        if (this.elements.rollType) this.elements.rollType.value = 'normal';
+        
+        this.updateDiceDisplayPreview();
+        
+        Notifications.addNotification(
+            'Configurações resetadas',
+            'Configurações de dados redefinidas para padrão',
+            'info',
+            true
+        );
     },
     
     // Limpar histórico
@@ -725,6 +826,22 @@ const DiceSystem = {
         linkElement.click();
         
         Notifications.addNotification('Histórico exportado', 'Arquivo JSON baixado com sucesso', 'success', true);
+    },
+    
+    // Alternar som
+    toggleSound: function() {
+        const currentSetting = localStorage.getItem('rpg_sound_enabled');
+        const newSetting = currentSetting === 'false' ? 'true' : 'false';
+        localStorage.setItem('rpg_sound_enabled', newSetting);
+        
+        Notifications.addNotification(
+            'Som ' + (newSetting === 'true' ? 'ativado' : 'desativado'),
+            'Efeitos sonoros de dados ' + (newSetting === 'true' ? 'ativados' : 'desativados'),
+            'info',
+            true
+        );
+        
+        return newSetting === 'true';
     },
     
     // =================== FUNÇÕES ESTATÍSTICAS ===================
@@ -794,63 +911,47 @@ const DiceSystem = {
     },
     
     // Mostrar estatísticas
-    showStatistics: function() {
-        const stats = this.getRollStatistics();
-        
-        let statsHTML = `
-            <div style="padding: 15px;">
-                <h3 style="color: #ffd93d; margin-bottom: 15px;">📊 Estatísticas de Rolagem</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
-                    <div style="background: rgba(25, 25, 45, 0.8); padding: 10px; border-radius: 8px;">
-                        <div style="color: #8a8ac4; font-size: 0.9rem;">Total de Rolagens</div>
-                        <div style="color: #ffd93d; font-size: 1.5rem; font-weight: bold;">${stats.totalRolls}</div>
-                    </div>
-                    <div style="background: rgba(25, 25, 45, 0.8); padding: 10px; border-radius: 8px;">
-                        <div style="color: #8a8ac4; font-size: 0.9rem;">Críticos</div>
-                        <div style="color: #6bcf7f; font-size: 1.5rem; font-weight: bold;">${stats.criticals}</div>
-                    </div>
-                    <div style="background: rgba(25, 25, 45, 0.8); padding: 10px; border-radius: 8px;">
-                        <div style="color: #8a8ac4; font-size: 0.9rem;">Falhas</div>
-                        <div style="color: #ff6b6b; font-size: 1.5rem; font-weight: bold;">${stats.fails}</div>
-                    </div>
-                    <div style="background: rgba(25, 25, 45, 0.8); padding: 10px; border-radius: 8px;">
-                        <div style="color: #8a8ac4; font-size: 0.9rem;">Maior Rolagem</div>
-                        <div style="color: #ffd93d; font-size: 1.2rem; font-weight: bold;">${stats.highestRoll.value} (d${stats.highestRoll.diceType})</div>
-                    </div>
-                </div>
-        `;
-        
-        // Adicionar estatísticas por tipo de dado
-        if (Object.keys(stats.byDiceType).length > 0) {
-            statsHTML += `<h4 style="color: #4d96ff; margin: 15px 0 10px 0;">Por Tipo de Dado:</h4>`;
+showStatistics: function() {
+    const stats = this.getRollStatistics();
+    
+    let statsHTML = `
+        <div style="padding: 15px;">
+            <h3 style="color: #ffd93d; margin-bottom: 15px;">
+                <i class="fas fa-chart-bar"></i> Estatísticas de Rolagem
+            </h3>
             
-            Object.entries(stats.byDiceType).forEach(([diceType, data]) => {
-                const average = stats.averageRolls[diceType];
-                statsHTML += `
-                    <div style="background: rgba(40, 40, 60, 0.8); padding: 10px; border-radius: 8px; margin-bottom: 8px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="color: #b8c1ec; font-weight: bold;">d${diceType}</span>
-                            <span style="color: #ffd93d;">${data.count} rolagens</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.9rem;">
-                            <span style="color: #8a8ac4;">Média: ${average}</span>
-                            <span style="color: #6bcf7f;">🎯 ${data.criticals}</span>
-                            <span style="color: #ff6b6b;">💀 ${data.fails}</span>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-        
-        statsHTML += `</div>`;
-        
-        // Mostrar em um modal ou alerta
-        alert(statsHTML.replace(/<[^>]*>/g, '')); // Versão simplificada para alert
-        
-        // Para uma implementação completa, você poderia criar um modal
-        // this.showStatisticsModal(statsHTML);
-    }
-};
-
-// Exportar para uso global
-window.DiceSystem = DiceSystem;
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                <div style="background: rgba(25, 25, 45, 0.8); padding: 10px; border-radius: 8px; border: 1px solid rgba(83, 52, 131, 0.3);">
+                    <div style="color: #8a8ac4; font-size: 0.9rem;">Total de Rolagens</div>
+                    <div style="color: #ffd93d; font-size: 1.5rem; font-weight: bold;">${stats.totalRolls}</div>
+                </div>
+                
+                <div style="background: rgba(25, 25, 45, 0.8); padding: 10px; border-radius: 8px; border: 1px solid rgba(83, 52, 131, 0.3);">
+                    <div style="color: #8a8ac4; font-size: 0.9rem;">Críticos</div>
+                    <div style="color: #4ade80; font-size: 1.5rem; font-weight: bold;">${stats.criticals}</div>
+                </div>
+                
+                <div style="background: rgba(25, 25, 45, 0.8); padding: 10px; border-radius: 8px; border: 1px solid rgba(83, 52, 131, 0.3);">
+                    <div style="color: #8a8ac4; font-size: 0.9rem;">Falhas Críticas</div>
+                    <div style="color: #ff6b6b; font-size: 1.5rem; font-weight: bold;">${stats.fails}</div>
+                </div>
+                
+                <div style="background: rgba(25, 25, 45, 0.8); padding: 10px; border-radius: 8px; border: 1px solid rgba(83, 52, 131, 0.3);">
+                    <div style="color: #8a8ac4; font-size: 0.9rem;">Tipos de Dados</div>
+                    <div style="color: #9d4edd; font-size: 1.5rem; font-weight: bold;">${Object.keys(stats.byDiceType).length}</div>
+                </div>
+            </div>
+            
+            ${this.generateDetailedStatsHTML(stats)}
+            
+            <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="closeStats" class="btn-secondary" style="padding: 8px 15px;">Fechar</button>
+                <button id="exportStats" class="btn-primary" style="padding: 8px 15px;">
+                    <i class="fas fa-download"></i> Exportar
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // ... código para exibir o modal e configurar eventos
+}
