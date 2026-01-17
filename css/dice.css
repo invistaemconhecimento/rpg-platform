@@ -1,1 +1,170 @@
+/* =================== DICE SECTION =================== */
+.dice-collection {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+}
 
+.dice-type {
+    background: rgba(25, 25, 45, 0.7);
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: 2px solid transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.dice-type:hover {
+    transform: translateY(-5px);
+    border-color: #9d4edd;
+    box-shadow: 0 5px 15px rgba(157, 78, 221, 0.3);
+}
+
+.dice-type.active {
+    border-color: #ffd93d;
+    background: rgba(255, 217, 61, 0.1);
+    box-shadow: 0 5px 15px rgba(255, 217, 61, 0.3);
+}
+
+.dice-icon {
+    font-size: 2rem;
+    color: #9d4edd;
+    font-weight: bold;
+}
+
+.dice-type.active .dice-icon {
+    color: #ffd93d;
+}
+
+.dice-label {
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.dice-controls {
+    background: rgba(25, 25, 45, 0.7);
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 20px;
+    border: 1px solid #533483;
+}
+
+.dice-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.option-group {
+    flex: 1;
+    min-width: 150px;
+}
+
+.dice-display-container {
+    text-align: center;
+    margin: 20px 0;
+    padding: 20px;
+    background: rgba(15, 15, 25, 0.8);
+    border-radius: 15px;
+    border: 2px solid #9d4edd;
+}
+
+.dice-display {
+    width: 120px;
+    height: 120px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    font-weight: bold;
+    color: #ffd93d;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    margin: 0 auto 20px;
+    border: 3px solid #9d4edd;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s;
+}
+
+.dice-display::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    background: linear-gradient(45deg, transparent 30%, rgba(157, 78, 221, 0.1) 50%, transparent 70%);
+    animation: shine 3s infinite linear;
+}
+
+@keyframes shine {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.dice-rolling {
+    animation: roll 0.8s infinite;
+}
+
+@keyframes roll {
+    0% { transform: rotate(0deg) scale(1); }
+    25% { transform: rotate(90deg) scale(1.1); }
+    50% { transform: rotate(180deg) scale(1); }
+    75% { transform: rotate(270deg) scale(1.1); }
+    100% { transform: rotate(360deg) scale(1); }
+}
+
+.dice-roll-btn {
+    width: 100%;
+    padding: 15px;
+    font-size: 1.2rem;
+    margin-top: 10px;
+}
+
+.dice-history {
+    background: rgba(15, 15, 25, 0.7);
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 20px;
+    border: 1px solid #533483;
+}
+
+.dice-history-list {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    max-height: 100px;
+    overflow-y: auto;
+    padding: 5px;
+}
+
+.dice-history-item {
+    background: rgba(157, 78, 221, 0.2);
+    color: #b8c1ec;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    border: 1px solid rgba(157, 78, 221, 0.5);
+}
+
+.dice-history-item.critical {
+    background: rgba(255, 217, 61, 0.3);
+    color: #ffd93d;
+    border-color: rgba(255, 217, 61, 0.7);
+}
+
+.dice-history-item.fail {
+    background: rgba(255, 107, 107, 0.3);
+    color: #ff6b6b;
+    border-color: rgba(255, 107, 107, 0.7);
+}
