@@ -1,7 +1,7 @@
 // Configuração do JSONBin.io
 const JSONBIN_CONFIG = {
-    BIN_ID: 'seu-bin-id-aqui', // Substitua pelo seu bin ID
-    API_KEY: 'sua-api-key-aqui', // Substitua pela sua API key
+    BIN_ID: 696c213d43b1c97be937a608, // Substitua pelo seu bin ID
+    API_KEY: $2a$10$bvBUVBhgKvyGIYRvNtACLegHqy58JUdWNGxQAqF3GDn6xLZJ7jzL6, // Substitua pela sua API key
     BASE_URL: 'https://api.jsonbin.io/v3/b'
 };
 
