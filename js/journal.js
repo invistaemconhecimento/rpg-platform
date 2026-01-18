@@ -1,83 +1,108 @@
 function initJournalModule() {
-    const newEntryBtn = document.getElementById('new-entry');
+    console.log('Inicializando módulo de diário...');
     
+    const newEntryBtn = document.getElementById('new-entry');
     if (newEntryBtn) {
-        newEntryBtn.addEventListener('click', createNewEntry);
+        newEntryBtn.addEventListener('click', createJournalEntry);
     }
     
-    updateJournalEntries();
+    updateJournalDisplay();
 }
 
-function updateJournalEntries() {
-    const entriesContainer = document.getElementById('journal-entries');
-    if (!entriesContainer) return;
+function updateJournalDisplay() {
+    const entriesDiv = document.getElementById('journal-entries');
+    if (!entriesDiv) return;
     
-    entriesContainer.innerHTML = '';
+    entriesDiv.innerHTML = '';
     
     if (AppState.journalEntries.length === 0) {
-        entriesContainer.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-book-open fa-3x"></i>
-                <p>Nenhuma entrada no diário ainda.</p>
-                <button id="create-first-entry" class="btn-primary">
-                    <i class="fas fa-plus"></i> Criar Primeira Entrada
-                </button>
+        entriesDiv.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #888;">
+                <i class="fas fa-book-open" style="font-size: 48px; margin-bottom: 20px;"></i>
+                <h3>Diário Vazio</h3>
+                <p>Registre suas aventuras aqui!</p>
             </div>
         `;
-        
-        document.getElementById('create-first-entry')?.addEventListener('click', createNewEntry);
         return;
     }
     
     AppState.journalEntries.forEach((entry, index) => {
-        const entryElement = document.createElement('div');
-        entryElement.className = 'journal-entry';
-        entryElement.innerHTML = `
-            <div class="entry-header">
-                <h3>${entry.title}</h3>
-                <span class="entry-date">${new Date(entry.date).toLocaleDateString()}</span>
+        const entryDiv = document.createElement('div');
+        entryDiv.className = 'journal-entry';
+        entryDiv.style.cssText = `
+            background: #16213e;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #5e35b1;
+        `;
+        
+        const date = new Date(entry.date);
+        const formattedDate = date.toLocaleDateString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        entryDiv.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                <h4 style="color: #ff9800; margin: 0;">${entry.title}</h4>
+                <small style="color: #888;">${formattedDate}</small>
             </div>
-            <p>${entry.content.substring(0, 150)}${entry.content.length > 150 ? '...' : ''}</p>
-            <div class="entry-actions">
-                <button class="btn-view-entry" data-index="${index}">Ler</button>
-                <button class="btn-edit-entry" data-index="${index}">Editar</button>
-                <button class="btn-delete-entry" data-index="${index}">Excluir</button>
+            <p style="color: #ccc; line-height: 1.5;">${entry.content}</p>
+            <div style="margin-top: 15px; font-size: 0.9em; color: #888;">
+                <i class="fas fa-user"></i> Por ${entry.author}
+            </div>
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <button onclick="deleteJournalEntry(${index})" style="padding: 5px 10px; background: #f44336; border: none; border-radius: 3px; color: white; font-size: 0.9em;">
+                    <i class="fas fa-trash"></i> Excluir
+                </button>
             </div>
         `;
         
-        entriesContainer.appendChild(entryElement);
-    });
-    
-    // Adicionar eventos
-    document.querySelectorAll('.btn-view-entry').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const index = this.dataset.index;
-            viewJournalEntry(index);
-        });
+        entriesDiv.appendChild(entryDiv);
     });
 }
 
-function createNewEntry() {
+function createJournalEntry() {
     const title = prompt('Título da entrada:');
     if (!title) return;
     
-    const content = prompt('Conteúdo da entrada:');
+    const content = prompt('Descreva sua aventura:');
     if (!content) return;
     
-    const newEntry = {
+    const entry = {
         id: Date.now(),
         title,
         content,
         date: new Date().toISOString(),
-        author: AppState.currentUser || 'Jogador'
+        author: AppState.currentUser
     };
     
-    AppState.journalEntries.unshift(newEntry);
+    AppState.journalEntries.unshift(entry);
     
     saveToJSONBin('journal', AppState.journalEntries).then(success => {
         if (success) {
-            showNotification('Entrada criada com sucesso!', 'success');
-            updateJournalEntries();
+            showNotification('Entrada salva no diário!', 'success');
+            updateJournalDisplay();
         }
     });
 }
+
+function deleteJournalEntry(index) {
+    if (confirm('Excluir esta entrada do diário?')) {
+        AppState.journalEntries.splice(index, 1);
+        
+        saveToJSONBin('journal', AppState.journalEntries).then(success => {
+            if (success) {
+                showNotification('Entrada excluída!', 'success');
+                updateJournalDisplay();
+            }
+        });
+    }
+}
+
+window.createJournalEntry = createJournalEntry;
+window.deleteJournalEntry = deleteJournalEntry;
