@@ -1,65 +1,70 @@
 function initChatModule() {
-    const sendButton = document.getElementById('send-message');
-    const messageInput = document.getElementById('message-input');
+    console.log('Inicializando módulo de chat...');
     
-    if (sendButton && messageInput) {
-        sendButton.addEventListener('click', sendMessage);
-        messageInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') sendMessage();
+    const sendBtn = document.getElementById('send-message');
+    const input = document.getElementById('message-input');
+    
+    if (sendBtn && input) {
+        sendBtn.addEventListener('click', sendChatMessage);
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendChatMessage();
         });
     }
     
-    updateChatMessages();
+    updateChatDisplay();
+    
+    // Simular atualização periódica (em produção, use WebSockets)
+    setInterval(updateChatDisplay, 5000);
 }
 
-function sendMessage() {
+function sendChatMessage() {
     const input = document.getElementById('message-input');
     const message = input.value.trim();
     
     if (!message) return;
     
-    const newMessage = {
+    const chatMessage = {
         id: Date.now(),
         text: message,
-        sender: AppState.currentUser || 'Jogador',
+        sender: AppState.currentUser,
         timestamp: new Date().toISOString(),
         type: 'chat'
     };
     
-    AppState.chatMessages.push(newMessage);
+    AppState.chatMessages.push(chatMessage);
     input.value = '';
     
-    // Exibir localmente
-    displayMessage(newMessage);
-    
-    // Em uma versão completa, aqui enviaria para o servidor
-    // saveToJSONBin('chat', AppState.chatMessages);
-}
-
-function displayMessage(message) {
-    const messagesContainer = document.getElementById('chat-messages');
-    
-    const messageElement = document.createElement('div');
-    messageElement.className = 'message';
-    messageElement.innerHTML = `
-        <div class="message-header">
-            <span class="message-sender">${message.sender}</span>
-            <span class="message-time">${new Date(message.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-        </div>
-        <div class="message-content">${message.text}</div>
-    `;
-    
-    messagesContainer.appendChild(messageElement);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-}
-
-function updateChatMessages() {
-    const messagesContainer = document.getElementById('chat-messages');
-    if (!messagesContainer) return;
-    
-    messagesContainer.innerHTML = '';
-    
-    AppState.chatMessages.forEach(message => {
-        displayMessage(message);
+    // Salvar no JSONBin
+    saveToJSONBin('chat', AppState.chatMessages).then(success => {
+        if (success) {
+            updateChatDisplay();
+        }
     });
 }
+
+function updateChatDisplay() {
+    const messagesDiv = document.getElementById('chat-messages');
+    if (!messagesDiv) return;
+    
+    // Ordenar por timestamp (mais recentes primeiro)
+    const sortedMessages = [...AppState.chatMessages].sort((a, b) => 
+        new Date(b.timestamp) - new Date(a.timestamp)
+    ).slice(0, 50); // Limitar a 50 mensagens
+    
+    messagesDiv.innerHTML = '';
+    
+    if (sortedMessages.length === 0) {
+        messagesDiv.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #888;">
+                <i class="fas fa-comments" style="font-size: 48px; margin-bottom: 20px;"></i>
+                <h3>Nenhuma mensagem</h3>
+                <p>Seja o primeiro a falar!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Mostrar do mais antigo para o mais recente (para rolagem)
+    sortedMessages.reverse().forEach(msg => {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'chat-m
