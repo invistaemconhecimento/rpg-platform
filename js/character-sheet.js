@@ -1,240 +1,300 @@
 function initCharacterModule() {
-    const newCharacterBtn = document.getElementById('new-character');
-    const characterList = document.getElementById('character-list');
+    console.log('Inicializando módulo de personagens...');
     
-    if (newCharacterBtn) {
-        newCharacterBtn.addEventListener('click', showCharacterForm);
+    const newCharBtn = document.getElementById('new-character');
+    if (newCharBtn) {
+        newCharBtn.addEventListener('click', () => showCharacterForm());
     }
     
-    // Carregar personagens existentes
     updateCharacterList();
 }
 
 function updateCharacterList() {
-    const characterList = document.getElementById('character-list');
-    if (!characterList) return;
+    const listDiv = document.getElementById('character-list');
+    if (!listDiv) return;
     
-    characterList.innerHTML = '';
+    listDiv.innerHTML = '';
     
     if (AppState.characters.length === 0) {
-        characterList.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-users fa-3x"></i>
-                <p>Nenhum personagem criado ainda.</p>
-                <button id="create-first-character" class="btn-primary">
-                    <i class="fas fa-plus"></i> Criar Primeiro Personagem
+        listDiv.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #888;">
+                <i class="fas fa-users" style="font-size: 48px; margin-bottom: 20px;"></i>
+                <h3>Nenhum personagem criado</h3>
+                <p>Crie seu primeiro personagem para começar!</p>
+                <button onclick="showCharacterForm()" style="margin-top: 20px;">
+                    <i class="fas fa-plus"></i> Criar Personagem
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    AppState.characters.forEach((char, index) => {
+        const card = document.createElement('div');
+        card.className = 'character-card';
+        card.style.cssText = `
+            background: #16213e;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #ff9800;
+            cursor: pointer;
+        `;
+        
+        card.innerHTML = `
+            <h3 style="color: #ff9800; margin-bottom: 10px;">${char.name}</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                <div><strong>Classe:</strong> ${char.class}</div>
+                <div><strong>Raça:</strong> ${char.race}</div>
+                <div><strong>Nível:</strong> ${char.level}</div>
+                <div><strong>Jogador:</strong> ${char.player}</div>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <div><strong>HP:</strong> ${char.hp?.current || 0}/${char.hp?.max || 0}</div>
+                <div><strong>CA:</strong> ${char.ac || 10}</div>
+            </div>
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <button onclick="editCharacter(${index})" style="padding: 5px 10px; background: #ff9800; border: none; border-radius: 3px; color: white;">
+                    Editar
+                </button>
+                <button onclick="deleteCharacter(${index})" style="padding: 5px 10px; background: #f44336; border: none; border-radius: 3px; color: white;">
+                    Excluir
                 </button>
             </div>
         `;
         
-        document.getElementById('create-first-character')?.addEventListener('click', showCharacterForm);
-        return;
-    }
-    
-    AppState.characters.forEach((character, index) => {
-        const characterCard = document.createElement('div');
-        characterCard.className = 'character-card';
-        characterCard.innerHTML = `
-            <h3>${character.name}</h3>
-            <p><strong>Classe:</strong> ${character.class} (Nível ${character.level})</p>
-            <p><strong>Raça:</strong> ${character.race}</p>
-            <p><strong>Jogador:</strong> ${character.player}</p>
-            <div class="character-info">
-                <div><strong>HP:</strong> ${character.hp.current}/${character.hp.max}</div>
-                <div><strong>CA:</strong> ${character.ac}</div>
-                <div><strong>For:</strong> ${character.abilities.str}</div>
-                <div><strong>Des:</strong> ${character.abilities.dex}</div>
-            </div>
-            <div class="character-actions">
-                <button class="btn-view" data-index="${index}">Ver</button>
-                <button class="btn-edit" data-index="${index}">Editar</button>
-                <button class="btn-delete" data-index="${index}">Excluir</button>
-            </div>
-        `;
+        card.addEventListener('click', (e) => {
+            if (!e.target.closest('button')) {
+                viewCharacter(index);
+            }
+        });
         
-        characterList.appendChild(characterCard);
-    });
-    
-    // Adicionar eventos aos botões
-    document.querySelectorAll('.btn-view').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const index = this.dataset.index;
-            viewCharacter(index);
-        });
-    });
-    
-    document.querySelectorAll('.btn-edit').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const index = this.dataset.index;
-            editCharacter(index);
-        });
-    });
-    
-    document.querySelectorAll('.btn-delete').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const index = this.dataset.index;
-            deleteCharacter(index);
-        });
+        listDiv.appendChild(card);
     });
 }
 
 function showCharacterForm(character = null) {
     const isEdit = character !== null;
-    const characterForm = document.getElementById('character-form');
-    const characterList = document.getElementById('character-list');
+    const formDiv = document.getElementById('character-form');
+    const listDiv = document.getElementById('character-list');
     
-    if (characterList) characterList.style.display = 'none';
-    if (characterForm) characterForm.style.display = 'block';
+    if (listDiv) listDiv.style.display = 'none';
+    if (formDiv) formDiv.style.display = 'block';
     
-    characterForm.innerHTML = `
-        <h3>${isEdit ? 'Editar' : 'Criar'} Personagem</h3>
-        <form id="character-form-data">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="char-name">Nome do Personagem *</label>
-                    <input type="text" id="char-name" value="${isEdit ? character.name : ''}" required>
+    formDiv.innerHTML = `
+        <div style="background: #16213e; padding: 20px; border-radius: 10px;">
+            <h3 style="margin-bottom: 20px; color: #ff9800;">
+                <i class="fas fa-${isEdit ? 'edit' : 'plus'}"></i>
+                ${isEdit ? 'Editar' : 'Criar'} Personagem
+            </h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <div>
+                    <label>Nome *</label>
+                    <input type="text" id="char-name" value="${isEdit ? character.name : ''}" 
+                           style="width: 100%; padding: 8px; background: #1a1a2e; border: 1px solid #5e35b1; color: white; border-radius: 4px;">
                 </div>
-                <div class="form-group">
-                    <label for="char-player">Jogador *</label>
-                    <input type="text" id="char-player" value="${isEdit ? character.player : ''}" required>
+                <div>
+                    <label>Jogador *</label>
+                    <input type="text" id="char-player" value="${isEdit ? character.player : AppState.currentUser}" 
+                           style="width: 100%; padding: 8px; background: #1a1a2e; border: 1px solid #5e35b1; color: white; border-radius: 4px;">
                 </div>
-                <div class="form-group">
-                    <label for="char-class">Classe *</label>
-                    <select id="char-class" required>
+                <div>
+                    <label>Classe *</label>
+                    <select id="char-class" style="width: 100%; padding: 8px; background: #1a1a2e; border: 1px solid #5e35b1; color: white; border-radius: 4px;">
                         <option value="">Selecione...</option>
                         <option value="Guerreiro" ${isEdit && character.class === 'Guerreiro' ? 'selected' : ''}>Guerreiro</option>
                         <option value="Mago" ${isEdit && character.class === 'Mago' ? 'selected' : ''}>Mago</option>
                         <option value="Ladino" ${isEdit && character.class === 'Ladino' ? 'selected' : ''}>Ladino</option>
                         <option value="Clérigo" ${isEdit && character.class === 'Clérigo' ? 'selected' : ''}>Clérigo</option>
-                        <option value="Bárbaro" ${isEdit && character.class === 'Bárbaro' ? 'selected' : ''}>Bárbaro</option>
-                        <option value="Bardo" ${isEdit && character.class === 'Bardo' ? 'selected' : ''}>Bardo</option>
-                        <option value="Druida" ${isEdit && character.class === 'Druida' ? 'selected' : ''}>Druida</option>
-                        <option value="Monge" ${isEdit && character.class === 'Monge' ? 'selected' : ''}>Monge</option>
-                        <option value="Paladino" ${isEdit && character.class === 'Paladino' ? 'selected' : ''}>Paladino</option>
-                        <option value="Patrulheiro" ${isEdit && character.class === 'Patrulheiro' ? 'selected' : ''}>Patrulheiro</option>
-                        <option value="Feiticeiro" ${isEdit && character.class === 'Feiticeiro' ? 'selected' : ''}>Feiticeiro</option>
-                        <option value="Bruxo" ${isEdit && character.class === 'Bruxo' ? 'selected' : ''}>Bruxo</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="char-race">Raça *</label>
-                    <select id="char-race" required>
+                <div>
+                    <label>Raça *</label>
+                    <select id="char-race" style="width: 100%; padding: 8px; background: #1a1a2e; border: 1px solid #5e35b1; color: white; border-radius: 4px;">
                         <option value="">Selecione...</option>
                         <option value="Humano" ${isEdit && character.race === 'Humano' ? 'selected' : ''}>Humano</option>
                         <option value="Elfo" ${isEdit && character.race === 'Elfo' ? 'selected' : ''}>Elfo</option>
                         <option value="Anão" ${isEdit && character.race === 'Anão' ? 'selected' : ''}>Anão</option>
                         <option value="Halfling" ${isEdit && character.race === 'Halfling' ? 'selected' : ''}>Halfling</option>
-                        <option value="Draconato" ${isEdit && character.race === 'Draconato' ? 'selected' : ''}>Draconato</option>
-                        <option value="Gnomo" ${isEdit && character.race === 'Gnomo' ? 'selected' : ''}>Gnomo</option>
-                        <option value="Meio-Elfo" ${isEdit && character.race === 'Meio-Elfo' ? 'selected' : ''}>Meio-Elfo</option>
-                        <option value="Meio-Orc" ${isEdit && character.race === 'Meio-Orc' ? 'selected' : ''}>Meio-Orc</option>
-                        <option value="Tiefling" ${isEdit && character.race === 'Tiefling' ? 'selected' : ''}>Tiefling</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="char-level">Nível *</label>
-                    <input type="number" id="char-level" min="1" max="20" value="${isEdit ? character.level : 1}" required>
+                <div>
+                    <label>Nível *</label>
+                    <input type="number" id="char-level" min="1" max="20" value="${isEdit ? character.level : 1}" 
+                           style="width: 100%; padding: 8px; background: #1a1a2e; border: 1px solid #5e35b1; color: white; border-radius: 4px;">
                 </div>
-                <div class="form-group">
-                    <label for="char-hp">Pontos de Vida *</label>
-                    <input type="number" id="char-hp" value="${isEdit ? character.hp.max : 10}" required>
+                <div>
+                    <label>Pontos de Vida *</label>
+                    <input type="number" id="char-hp" value="${isEdit ? (character.hp?.max || 10) : 10}" 
+                           style="width: 100%; padding: 8px; background: #1a1a2e; border: 1px solid #5e35b1; color: white; border-radius: 4px;">
                 </div>
-                <div class="form-group">
-                    <label for="char-ac">Classe de Armadura (CA) *</label>
-                    <input type="number" id="char-ac" min="10" max="30" value="${isEdit ? character.ac : 10}" required>
-                </div>
-            </div>
-            
-            <h4>Atributos</h4>
-            <div class="attributes-grid">
-                <div class="attribute">
-                    <label for="char-str">Força</label>
-                    <input type="number" id="char-str" min="1" max="30" value="${isEdit ? character.abilities.str : 10}">
-                </div>
-                <div class="attribute">
-                    <label for="char-dex">Destreza</label>
-                    <input type="number" id="char-dex" min="1" max="30" value="${isEdit ? character.abilities.dex : 10}">
-                </div>
-                <div class="attribute">
-                    <label for="char-con">Constituição</label>
-                    <input type="number" id="char-con" min="1" max="30" value="${isEdit ? character.abilities.con : 10}">
-                </div>
-                <div class="attribute">
-                    <label for="char-int">Inteligência</label>
-                    <input type="number" id="char-int" min="1" max="30" value="${isEdit ? character.abilities.int : 10}">
-                </div>
-                <div class="attribute">
-                    <label for="char-wis">Sabedoria</label>
-                    <input type="number" id="char-wis" min="1" max="30" value="${isEdit ? character.abilities.wis : 10}">
-                </div>
-                <div class="attribute">
-                    <label for="char-cha">Carisma</label>
-                    <input type="number" id="char-cha" min="1" max="30" value="${isEdit ? character.abilities.cha : 10}">
+                <div>
+                    <label>Classe de Armadura (CA) *</label>
+                    <input type="number" id="char-ac" min="10" max="30" value="${isEdit ? character.ac : 10}" 
+                           style="width: 100%; padding: 8px; background: #1a1a2e; border: 1px solid #5e35b1; color: white; border-radius: 4px;">
                 </div>
             </div>
             
-            <div class="form-actions">
-                <button type="submit" class="btn-primary">${isEdit ? 'Atualizar' : 'Criar'} Personagem</button>
-                <button type="button" id="cancel-form" class="btn-secondary">Cancelar</button>
+            <h4 style="color: #ff9800; margin: 20px 0 10px 0;">Atributos</h4>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                <div style="text-align: center;">
+                    <label>Força</label>
+                    <input type="number" id="char-str" min="1" max="30" value="${isEdit ? (character.abilities?.str || 10) : 10}" 
+                           style="width: 80px; padding: 8px; text-align: center; background: #1a1a2e; border: 1px solid #5e35b1; color: white; border-radius: 4px;">
+                </div>
+                <div style="text-align: center;">
+                    <label>Destreza</label>
+                    <input type="number" id="char-dex" min="1" max="30" value="${isEdit ? (character.abilities?.dex || 10) : 10}" 
+                           style="width: 80px; padding: 8px; text-align: center; background: #1a1a2e; border: 1px solid #5e35b1; color: white; border-radius: 4px;">
+                </div>
+                <div style="text-align: center;">
+                    <label>Constituição</label>
+                    <input type="number" id="char-con" min="1" max="30" value="${isEdit ? (character.abilities?.con || 10) : 10}" 
+                           style="width: 80px; padding: 8px; text-align: center; background: #1a1a2e; border: 1px solid #5e35b1; color: white; border-radius: 4px;">
+                </div>
             </div>
-        </form>
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button onclick="saveCharacter(${isEdit ? index : null})" 
+                        style="padding: 10px 20px; background: #4CAF50; border: none; border-radius: 4px; color: white; cursor: pointer;">
+                    <i class="fas fa-save"></i> ${isEdit ? 'Atualizar' : 'Salvar'}
+                </button>
+                <button onclick="cancelCharacterForm()" 
+                        style="padding: 10px 20px; background: #666; border: none; border-radius: 4px; color: white; cursor: pointer;">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+            </div>
+        </div>
     `;
-    
-    // Configurar evento de submit
-    document.getElementById('character-form-data').addEventListener('submit', function(e) {
-        e.preventDefault();
-        if (isEdit) {
-            updateCharacter(character.index);
-        } else {
-            createCharacter();
-        }
-    });
-    
-    // Configurar botão de cancelar
-    document.getElementById('cancel-form').addEventListener('click', function() {
-        characterForm.style.display = 'none';
-        if (characterList) characterList.style.display = 'grid';
-    });
 }
 
-function createCharacter() {
+function saveCharacter(index = null) {
+    const name = document.getElementById('char-name').value;
+    const player = document.getElementById('char-player').value;
+    const charClass = document.getElementById('char-class').value;
+    const race = document.getElementById('char-race').value;
+    const level = parseInt(document.getElementById('char-level').value);
+    const hp = parseInt(document.getElementById('char-hp').value);
+    const ac = parseInt(document.getElementById('char-ac').value);
+    const str = parseInt(document.getElementById('char-str').value);
+    const dex = parseInt(document.getElementById('char-dex').value);
+    const con = parseInt(document.getElementById('char-con').value);
+    
+    // Validação básica
+    if (!name || !player || !charClass || !race) {
+        showNotification('Preencha todos os campos obrigatórios!', 'error');
+        return;
+    }
+    
     const character = {
-        name: document.getElementById('char-name').value,
-        player: document.getElementById('char-player').value,
-        class: document.getElementById('char-class').value,
-        race: document.getElementById('char-race').value,
-        level: parseInt(document.getElementById('char-level').value),
-        hp: {
-            current: parseInt(document.getElementById('char-hp').value),
-            max: parseInt(document.getElementById('char-hp').value)
-        },
-        ac: parseInt(document.getElementById('char-ac').value),
-        abilities: {
-            str: parseInt(document.getElementById('char-str').value),
-            dex: parseInt(document.getElementById('char-dex').value),
-            con: parseInt(document.getElementById('char-con').value),
-            int: parseInt(document.getElementById('char-int').value),
-            wis: parseInt(document.getElementById('char-wis').value),
-            cha: parseInt(document.getElementById('char-cha').value)
-        },
-        createdAt: new Date().toISOString()
+        name,
+        player,
+        class: charClass,
+        race,
+        level,
+        hp: { current: hp, max: hp },
+        ac,
+        abilities: { str, dex, con, int: 10, wis: 10, cha: 10 },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
     };
     
-    AppState.characters.push(character);
+    if (index !== null) {
+        // Editar existente
+        AppState.characters[index] = character;
+    } else {
+        // Novo personagem
+        AppState.characters.push(character);
+    }
     
     // Salvar no JSONBin
     saveToJSONBin('characters', AppState.characters).then(success => {
         if (success) {
-            showNotification('Personagem criado com sucesso!', 'success');
+            showNotification(`Personagem ${index !== null ? 'atualizado' : 'criado'} com sucesso!`, 'success');
+            cancelCharacterForm();
             updateCharacterList();
-            
-            // Voltar para a lista
-            document.getElementById('character-form').style.display = 'none';
-            document.getElementById('character-list').style.display = 'grid';
         } else {
             showNotification('Erro ao salvar personagem', 'error');
         }
     });
 }
 
-// Implementar viewCharacter, editCharacter, deleteCharacter conforme necessário
+function cancelCharacterForm() {
+    const formDiv = document.getElementById('character-form');
+    const listDiv = document.getElementById('character-list');
+    
+    if (formDiv) formDiv.style.display = 'none';
+    if (listDiv) {
+        listDiv.style.display = 'grid';
+        updateCharacterList();
+    }
+}
+
+function editCharacter(index) {
+    if (AppState.characters[index]) {
+        showCharacterForm(AppState.characters[index], index);
+    }
+}
+
+function deleteCharacter(index) {
+    if (confirm('Tem certeza que deseja excluir este personagem?')) {
+        AppState.characters.splice(index, 1);
+        
+        saveToJSONBin('characters', AppState.characters).then(success => {
+            if (success) {
+                showNotification('Personagem excluído!', 'success');
+                updateCharacterList();
+            }
+        });
+    }
+}
+
+function viewCharacter(index) {
+    const char = AppState.characters[index];
+    if (!char) return;
+    
+    const modal = document.getElementById('modal');
+    const modalBody = document.getElementById('modal-body');
+    
+    if (modal && modalBody) {
+        modalBody.innerHTML = `
+            <div style="padding: 20px;">
+                <h2 style="color: #ff9800;">${char.name}</h2>
+                <p><strong>Jogador:</strong> ${char.player}</p>
+                <p><strong>Classe/Nível:</strong> ${char.class} ${char.race} (Nível ${char.level})</p>
+                <hr>
+                <h3>Atributos</h3>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 15px 0;">
+                    <div><strong>Força:</strong> ${char.abilities.str}</div>
+                    <div><strong>Destreza:</strong> ${char.abilities.dex}</div>
+                    <div><strong>Constituição:</strong> ${char.abilities.con}</div>
+                    <div><strong>Inteligência:</strong> ${char.abilities.int}</div>
+                    <div><strong>Sabedoria:</strong> ${char.abilities.wis}</div>
+                    <div><strong>Carisma:</strong> ${char.abilities.cha}</div>
+                </div>
+                <div style="margin-top: 20px;">
+                    <button onclick="editCharacter(${index})" style="padding: 10px; background: #ff9800; color: white; border: none; border-radius: 4px;">
+                        Editar Personagem
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        modal.style.display = 'block';
+        
+        // Fechar modal
+        document.querySelector('.close-modal').onclick = () => modal.style.display = 'none';
+        window.onclick = (event) => {
+            if (event.target == modal) modal.style.display = 'none';
+        };
+    }
+}
+
+// Exportar funções globais
+window.showCharacterForm = showCharacterForm;
+window.saveCharacter = saveCharacter;
+window.cancelCharacterForm = cancelCharacterForm;
+window.editCharacter = editCharacter;
+window.deleteCharacter = deleteCharacter;
+window.viewCharacter = viewCharacter;
