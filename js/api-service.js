@@ -1,7 +1,7 @@
 // Configuração do JSONBin.io - ATUALIZE COM SEUS DADOS!
 const JSONBIN_CONFIG = {
     BIN_ID: 696c213d43b1c97be937a608, // Cole seu BIN ID
-    API_KEY: $2a$10$bvBUVBhgKvyGIYRvNtACLegHqy58JUdWNGxQAqF3GDn6xLZJ7jzL6, // Cole sua Master Key
+    API_KEY: $2a$10$gHdA8KAK/9HnnagDiMTlHeBUzNo9cWC0lR8EL0IaUpJg5ChpGiz/i, // Cole sua Master Key
     BASE_URL: 'https://api.jsonbin.io/v3/b'
 };
 
