@@ -67,4 +67,39 @@ function updateChatDisplay() {
     // Mostrar do mais antigo para o mais recente (para rolagem)
     sortedMessages.reverse().forEach(msg => {
         const msgDiv = document.createElement('div');
-        msgDiv.className = 'chat-m
+        msgDiv.className = 'chat-message';
+        
+        const time = new Date(msg.timestamp);
+        const timeStr = time.toLocaleTimeString('pt-BR', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+        
+        const isCurrentUser = msg.sender === AppState.currentUser;
+        
+        msgDiv.style.cssText = `
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            background: ${isCurrentUser ? '#2d3a5a' : '#1a2a3a'};
+            border-radius: 10px;
+            border-left: 4px solid ${isCurrentUser ? '#ff9800' : '#5e35b1'};
+            max-width: 80%;
+            margin-left: ${isCurrentUser ? 'auto' : '0'};
+        `;
+        
+        msgDiv.innerHTML = `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <strong style="color: ${isCurrentUser ? '#ff9800' : '#5e35b1'};">${msg.sender}</strong>
+                <small style="color: #888;">${timeStr}</small>
+            </div>
+            <div style="color: #ccc;">${msg.text}</div>
+        `;
+        
+        messagesDiv.appendChild(msgDiv);
+    });
+    
+    // Rolar para o final
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+window.sendChatMessage = sendChatMessage;
